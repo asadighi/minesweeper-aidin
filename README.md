@@ -32,7 +32,7 @@ The page will reload if you make edits.\
 You will also see any lint errors in the console.
 
 
-# How level summary
+# High level summary
 
 
 * GameState contains the state
