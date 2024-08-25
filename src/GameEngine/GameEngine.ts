@@ -2,82 +2,75 @@ import { GameConfig, GameDifficulty } from "./GameConfig";
 import { GameState, GameStatus } from "./GameState";
 
 export class GameEngine {
-
-
-
-    public createGame(rowCount: number, colCount: number, difficulty: GameDifficulty): GameState {
-        const state = {
+    public async createGame(rowCount: number, colCount: number, difficulty: GameDifficulty): Promise<GameState> {
+        const state: GameState = {
             rowCount,
             colCount,
             difficulty,
             mineCount: 0,
             status: GameStatus.Uninitialized,
-            land: Array.from({length: rowCount}, () => {
-                return Array.from({ length: colCount }, () => {
-                    return {
-                        hasMine: false,
-                        isDiscovered: false,
-                        isMarked: false,
-                        surroundingMineCount: 0
-                    }
-                })
-            })
+            land: Array.from({ length: rowCount }, () => 
+                Array.from({ length: colCount }, () => ({
+                    hasMine: false,
+                    isDiscovered: false,
+                    isMarked: false,
+                    surroundingMineCount: 0
+                }))
+            )
         };
-        this.placeMines(state);
-        this.fillSurroundingMineCountForAllCells(state);
+
+        await this.placeMines(state);
         state.status = GameStatus.InProgress;
         return state;
     }
 
-    private placeMines(state: GameState) {
+    private async placeMines(state: GameState): Promise<void> {
         const totalCellCount = state.colCount * state.rowCount;
         state.mineCount = Math.floor(GameConfig.MinePercentagePerDifficulty[state.difficulty] * totalCellCount);
-        let minesPlaced = 0;
-        while (minesPlaced < state.mineCount) {
-            // Generate random row and column indices
-            const row = Math.floor(Math.random() * state.rowCount);
-            const col = Math.floor(Math.random() * state.colCount);
 
-            // If the cell does not already contain a mine, place a mine (e.g., -1 for a mine)
-            if (!state.land[row][col].hasMine) {
-                state.land[row][col].hasMine = true;
-                minesPlaced++;
-            }
-        }
+        // Generate an array of all possible cell indices
+        const indices = Array.from({ length: totalCellCount }, (_, index) => index);
+        // Shuffle the indices array
+        this.shuffleArray(indices);
+
+        // Process mines placement in chunks using requestAnimationFrame
+        const promises = indices.slice(0, state.mineCount).map(index => {
+            return new Promise<void>(resolve => {
+                requestAnimationFrame(() => {
+                    const row = Math.floor(index / state.colCount);
+                    const col = index % state.colCount;
+
+                    state.land[row][col].hasMine = true;
+                    this.incrementSurroundingMineCount(state, row, col);
+                    resolve();
+                });
+            });
+        });
+
+        await Promise.all(promises);
     }
-    private fillSurroundingMineCountForAllCells(state: GameState) {
-        // Now that we have populated our mines lets ensure we can ca
-        // Directions to check for surrounding cells (8 possible directions)
+
+    private incrementSurroundingMineCount(state: GameState, row: number, col: number) {
         const directions = [
-            [-1, -1], [-1, 0], [-1, 1], // top-left, top, top-right
-            [0, -1], /*    */ [0, 1],   // left,        , right
-            [1, -1], [1, 0], [1, 1]     // bottom-left, bottom, bottom-right
+            [-1, -1], [-1, 0], [-1, 1],
+            [0, -1],          [0, 1],
+            [1, -1], [1, 0], [1, 1]
         ];
-        for (let row = 0; row < state.rowCount; row++) {
-            for (let col = 0; col < state.colCount; col++) {
-                // If the current cell is a mine, skip it
-                if (state.land[row][col].hasMine) {
-                    continue;
-                }
-    
-                // Check all surrounding cells
-                let mineCount = 0;
-                for (let [dx, dy] of directions) {
-                    const newRow = row + dx;
-                    const newCol = col + dy;
-    
-                    // Make sure the surrounding cell is within bounds
-                    if (newRow >= 0 && newRow < state.rowCount && newCol >= 0 && newCol < state.colCount) {
-                        if (state.land[newRow][newCol].hasMine) {
-                            mineCount++;
-                        }
-                    }
-                }
-    
-                // Store the count of surrounding mines in the corresponding cell
-                state.land[row][col].surroundingMineCount = mineCount;
+
+        for (let [dx, dy] of directions) {
+            const newRow = row + dx;
+            const newCol = col + dy;
+
+            if (newRow >= 0 && newRow < state.rowCount && newCol >= 0 && newCol < state.colCount) {
+                state.land[newRow][newCol].surroundingMineCount++;
             }
         }
     }
 
+    private shuffleArray(array: number[]) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]]; // Swap elements
+        }
+    }
 }
