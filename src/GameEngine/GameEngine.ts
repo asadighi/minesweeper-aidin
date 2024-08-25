@@ -1,70 +1,53 @@
 import { GameConfig, GameDifficulty } from "./GameConfig";
 import { GameState, GameStatus } from "./GameState";
+import { GridWorkerInput, GridWorkerOutput } from './GridWorker.worker';
 
 export class GameEngine {
+    private worker: Worker | null = null;
+
     public async createGame(rowCount: number, colCount: number, difficulty: GameDifficulty): Promise<GameState> {
-        const state: GameState = {
-            rowCount,
-            colCount,
-            difficulty,
-            mineCount: 0,
-            status: GameStatus.Uninitialized,
-            land: Array.from({ length: rowCount }, () => 
-                Array.from({ length: colCount }, () => ({
-                    hasMine: false,
-                    isDiscovered: false,
-                    isMarked: false,
-                    surroundingMineCount: 0
-                }))
-            )
-        };
-
-        await this.placeMines(state);
-        state.status = GameStatus.InProgress;
-        return state;
-    }
-
-    private async placeMines(state: GameState): Promise<void> {
-        const totalCellCount = state.colCount * state.rowCount;
-        state.mineCount = Math.floor(GameConfig.MinePercentagePerDifficulty[state.difficulty] * totalCellCount);
-
-        // Generate an array of all possible cell indices
-        const indices = Array.from({ length: totalCellCount }, (_, index) => index);
-        // Shuffle the indices array
-        this.shuffleArray(indices);
-
-        // Process mines placement in chunks using requestAnimationFrame
-        const promises = indices.slice(0, state.mineCount).map(index => {
-            return new Promise<void>(resolve => {
-                requestAnimationFrame(() => {
-                    const row = Math.floor(index / state.colCount);
-                    const col = index % state.colCount;
-
-                    state.land[row][col].hasMine = true;
-                    this.incrementSurroundingMineCount(state, row, col);
-                    resolve();
-                });
+        if (!this.worker) {
+            console.log('Initializing worker');
+            this.worker = new Worker(new URL('./GridWorker.worker.ts', import.meta.url), {
+                type: 'module',
             });
-        });
-
-        await Promise.all(promises);
-    }
-
-    private incrementSurroundingMineCount(state: GameState, row: number, col: number) {
-        const directions = [
-            [-1, -1], [-1, 0], [-1, 1],
-            [0, -1],          [0, 1],
-            [1, -1], [1, 0], [1, 1]
-        ];
-
-        for (let [dx, dy] of directions) {
-            const newRow = row + dx;
-            const newCol = col + dy;
-
-            if (newRow >= 0 && newRow < state.rowCount && newCol >= 0 && newCol < state.colCount) {
-                state.land[newRow][newCol].surroundingMineCount++;
-            }
         }
+
+        console.log('Starting to create game with', { rowCount, colCount, difficulty });
+
+        const totalCellCount = rowCount * colCount;
+        const mineCount = Math.floor(GameConfig.MinePercentagePerDifficulty[difficulty] * totalCellCount);
+
+        const indices = Array.from({ length: totalCellCount }, (_, index) => index);
+        this.shuffleArray(indices);
+        const selectedIndices = indices.slice(0, mineCount);
+
+        return new Promise((resolve, reject) => {
+            this.worker!.onmessage = function (event: MessageEvent<GridWorkerOutput>) {
+                const { land } = event.data;
+                console.log('Received message from worker:', event.data);
+                resolve({
+                    rowCount,
+                    colCount,
+                    difficulty,
+                    mineCount,
+                    status: GameStatus.InProgress,
+                    land,
+                });
+            };
+
+            this.worker!.onerror = function (error) {
+                console.error('Worker error:', error);
+                reject(`Worker error: ${error.message}`);
+            };
+
+            const workerInput: GridWorkerInput = { rowCount, colCount, mineCount, indices: selectedIndices };
+            if (!this.worker) {
+                throw new Error("worker is null");
+            }
+            console.log('Posting message to worker:', workerInput);
+            this.worker.postMessage(workerInput);
+        });
     }
 
     private shuffleArray(array: number[]) {

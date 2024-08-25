@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, CSSProperties } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import './App.css';
 import { GameEngine } from './GameEngine/GameEngine';
 import { GameConfig, GameDifficulty } from './GameEngine/GameConfig';
