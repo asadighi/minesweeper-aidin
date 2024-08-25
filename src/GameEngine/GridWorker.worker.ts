@@ -16,16 +16,14 @@ export interface GridWorkerOutput {
     }[][];
 }
 
+// Worker global context
 // eslint-disable-next-line no-restricted-globals
 const ctx: DedicatedWorkerGlobalScope = self as any;
 
-console.log('Worker script loaded'); // Ensure this runs when the worker is instantiated
-
 ctx.onmessage = function (e: MessageEvent<GridWorkerInput>) {
-    console.log('Worker received message:', e.data); // Log message receipt
-
     const { rowCount, colCount, indices } = e.data;
 
+    // Initialize the land grid
     const land = Array.from({ length: rowCount }, () =>
         Array.from({ length: colCount }, () => ({
             hasMine: false,
@@ -35,28 +33,42 @@ ctx.onmessage = function (e: MessageEvent<GridWorkerInput>) {
         }))
     );
 
-    indices.forEach((index) => {
-        const row = Math.floor(index / colCount);
-        const col = index % colCount;
-        land[row][col].hasMine = true;
+    // Precomputed directions array for neighboring cells
+    const directions = [
+        [-1, -1], [-1, 0], [-1, 1],
+        [0, -1],          [0, 1],
+        [1, -1], [1, 0], [1, 1],
+    ];
 
-        const directions = [
-            [-1, -1], [-1, 0], [-1, 1],
-            [0, -1], [0, 1],
-            [1, -1], [1, 0], [1, 1],
-        ];
+    let index = 0;
+    const chunkSize = 1000; // Adjust chunk size for balancing performance and responsiveness
 
-        directions.forEach(([dx, dy]) => {
-            const newRow = row + dx;
-            const newCol = col + dy;
+    // Function to process a chunk of mines
+    function processChunk() {
+        for (let i = 0; i < chunkSize && index < indices.length; i++, index++) {
+            const row = Math.floor(indices[index] / colCount);
+            const col = indices[index] % colCount;
+            land[row][col].hasMine = true;
 
-            if (newRow >= 0 && newRow < rowCount && newCol >= 0 && newCol < colCount) {
-                land[newRow][newCol].surroundingMineCount++;
-            }
-        });
-    });
+            // Update surrounding cells
+            directions.forEach(([dx, dy]) => {
+                const newRow = row + dx;
+                const newCol = col + dy;
 
-    const output: GridWorkerOutput = { land };
-    console.log('Worker posting message back to main thread'); // Log when sending data back
-    ctx.postMessage(output);
+                if (newRow >= 0 && newRow < rowCount && newCol >= 0 && newCol < colCount) {
+                    land[newRow][newCol].surroundingMineCount++;
+                }
+            });
+        }
+
+        // Continue processing if there are more mines
+        if (index < indices.length) {
+            setTimeout(processChunk, 0); // Yield control back to the event loop
+        } else {
+            // Post the final land grid back to the main thread
+            ctx.postMessage({ land });
+        }
+    }
+
+    processChunk(); // Start processing the first chunk
 };
