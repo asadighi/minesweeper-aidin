@@ -1,6 +1,7 @@
 import { GameConfig, GameDifficulty } from "./GameConfig";
 import { GameState, GameStatus } from "./GameState";
-import { GridWorkerInput, GridWorkerOutput } from './GridWorker.worker';
+// eslint-disable-next-line import/no-webpack-loader-syntax
+import WorkerConstructor from 'worker-loader!./GridWorker.worker'; // Import using the correct worker-loader syntax
 
 export class GameEngine {
     private worker: Worker | null = null;
@@ -8,9 +9,7 @@ export class GameEngine {
     public async createGame(rowCount: number, colCount: number, difficulty: GameDifficulty): Promise<GameState> {
         if (!this.worker) {
             console.log('Initializing worker');
-            this.worker = new Worker(new URL('./GridWorker.worker.ts', import.meta.url), {
-                type: 'module',
-            });
+            this.worker = new WorkerConstructor(); // Directly instantiate the worker using the WorkerConstructor
         }
 
         console.log('Starting to create game with', { rowCount, colCount, difficulty });
@@ -23,9 +22,10 @@ export class GameEngine {
         const selectedIndices = indices.slice(0, mineCount);
 
         return new Promise((resolve, reject) => {
-            this.worker!.onmessage = function (event: MessageEvent<GridWorkerOutput>) {
-                const { land } = event.data;
+            this.worker!.onmessage = function (event: MessageEvent<any>) {
                 console.log('Received message from worker:', event.data);
+                const { land } = event.data;
+
                 resolve({
                     rowCount,
                     colCount,
@@ -41,12 +41,9 @@ export class GameEngine {
                 reject(`Worker error: ${error.message}`);
             };
 
-            const workerInput: GridWorkerInput = { rowCount, colCount, mineCount, indices: selectedIndices };
-            if (!this.worker) {
-                throw new Error("worker is null");
-            }
+            const workerInput = { rowCount, colCount, mineCount, indices: selectedIndices };
             console.log('Posting message to worker:', workerInput);
-            this.worker.postMessage(workerInput);
+            this.worker!.postMessage(workerInput);
         });
     }
 

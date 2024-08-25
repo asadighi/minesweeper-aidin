@@ -16,12 +16,14 @@ export interface GridWorkerOutput {
     }[][];
 }
 
-// Declare that we are in a web worker context
 // eslint-disable-next-line no-restricted-globals
 const ctx: DedicatedWorkerGlobalScope = self as any;
 
+console.log('Worker script loaded'); // Ensure this runs when the worker is instantiated
+
 ctx.onmessage = function (e: MessageEvent<GridWorkerInput>) {
-    console.log('Worker received message:', e.data);
+    console.log('Worker received message:', e.data); // Log message receipt
+
     const { rowCount, colCount, indices } = e.data;
 
     const land = Array.from({ length: rowCount }, () =>
@@ -38,10 +40,9 @@ ctx.onmessage = function (e: MessageEvent<GridWorkerInput>) {
         const col = index % colCount;
         land[row][col].hasMine = true;
 
-        // Increment surrounding mine counts
         const directions = [
             [-1, -1], [-1, 0], [-1, 1],
-            [0, -1],          [0, 1],
+            [0, -1], [0, 1],
             [1, -1], [1, 0], [1, 1],
         ];
 
@@ -56,7 +57,6 @@ ctx.onmessage = function (e: MessageEvent<GridWorkerInput>) {
     });
 
     const output: GridWorkerOutput = { land };
-    console.log('Worker posting message back to main thread');
-
+    console.log('Worker posting message back to main thread'); // Log when sending data back
     ctx.postMessage(output);
 };
