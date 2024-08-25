@@ -35,13 +35,13 @@ You will also see any lint errors in the console.
 # How level summary
 
 
-GameState contains the state
-GameEngine is the core logic to create and update state
-  // TODO: Move more of the logic from App.tsx into GameEngine.
-GridWorker.worker.ts is a worker that handles computationally expensive work to free up the browser's main thread so it can attend to rendering
-App.tsx: Contains the main rendering logic. It uses react-window to virtualize the grid for performance, snappiness and efficiency
-  // TODO: Break it up into more SOLID components
+* GameState contains the state
+* GameEngine is the core logic to create and update state
+  * // TODO: Move more of the logic from App.tsx into GameEngine.
+* GridWorker.worker.ts is a worker that handles computationally expensive work to free up the browser's main thread so it can attend to rendering
+* App.tsx: Contains the main rendering logic. It uses react-window to virtualize the grid for performance, snappiness and efficiency
+  * // TODO: Break it up into more SOLID components
 
 # Next iterations to be desired
 
-Support 10Kx10K by memory optimization and looking into using WebAssembly
+* Support 10Kx10K by memory optimization and looking into using WebAssembly
