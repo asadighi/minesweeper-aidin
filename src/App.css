@@ -1,38 +1,176 @@
+/* App.css */
+
+/* Base styling */
+body {
+  background-color: #c0c0c0; /* Classic Minesweeper background */
+  color: #000;
+  font-family: 'Arial', sans-serif;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  overflow: hidden; /* Prevent body from scrolling */
+}
+
 .App {
   text-align: center;
-}
-
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  height: 100%;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.App-link {
-  color: #61dafb;
+.App-header {
+  background-color: #bdbdbd; /* Slightly darker gray for the header */
+  padding: 20px;
+  border-radius: 4px;
+  border: 2px solid #7b7b7b; /* Classic border color */
+  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #7b7b7b; /* Inset shadow for 3D effect */
+  overflow: hidden; /* Prevent header content from overflowing */
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+h1 {
+  font-size: 1.5rem;
+  margin: 0;
+  color: #000;
+}
+
+.game-controls {
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.game-controls label {
+  font-size: 1rem;
+  color: #000;
+}
+
+.game-controls input,
+.game-controls select,
+.game-controls button {
+  padding: 4px;
+  font-size: 1rem;
+  border-radius: 2px;
+  border: 1px solid #7b7b7b;
+  background-color: #e0e0e0; /* Light gray for input fields */
+  color: #000;
+  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #7b7b7b; /* 3D effect */
+}
+
+.game-controls button {
+  cursor: pointer;
+  background-color: #f0f0f0; /* Slightly lighter gray for buttons */
+  color: #000;
+  transition: background-color 0.2s;
+}
+
+.game-controls button:hover {
+  background-color: #d0d0d0; /* Slight hover effect */
+}
+
+.mine-counter,
+.game-status {
+  margin-top: 10px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #DAA520; /* Goldenrod color for the mine counter */
+}
+
+.scroll-container {
+  max-height: 60vh; /* Set a maximum height to enable vertical scrolling */
+  max-width: 90vw; /* Set a maximum width to enable horizontal scrolling */
+  overflow: auto; /* Allow scrolling in both directions */
+  padding: 4px;
+  box-sizing: border-box;
+}
+
+.game-board {
+  display: inline-block;
+  border: 2px solid #7b7b7b;
+  border-radius: 4px;
+  background-color: #bdbdbd; /* Same gray as header */
+  padding: 4px;
+  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #7b7b7b; /* 3D effect */
+}
+
+.row {
+  display: flex;
+}
+
+.cell {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #7b7b7b; /* Border around each cell */
+  background-color: #c0c0c0; /* Default cell color */
+  font-size: 1rem;
+  color: #000;
+  cursor: pointer;
+  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #7b7b7b; /* 3D effect */
+  transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+.cell.safe {
+  background-color: #e0e0e0; /* Light gray for revealed cells */
+  color: #000;
+  box-shadow: inset 0 0 0 #fff, inset 0 0 0 #7b7b7b; /* Remove 3D effect */
+}
+
+.cell.mine {
+  background-color: #f44336; /* Red for mines */
+  color: #fff;
+  box-shadow: inset 0 0 0 #fff, inset 0 0 0 #7b7b7b; /* Remove 3D effect */
+}
+
+.cell:disabled {
+  cursor: default;
+}
+
+.cell:hover:not(:disabled) {
+  background-color: #d0d0d0; /* Slightly darker on hover */
+  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #7b7b7b; /* Maintain 3D effect */
+}
+
+/* Ensure that content does not cause layout shifts */
+.cell span {
+  visibility: hidden;
+}
+
+.cell.safe span,
+.cell.mine span {
+  visibility: visible;
+}
+
+.mine-counter {
+  color: #DAA520; /* Goldenrod for better contrast */
+}
+
+.game-status p {
+  margin: 0;
+}
+
+.game-status button {
+  margin-top: 10px;
+  padding: 6px 12px;
+  font-size: 1rem;
+  background-color: #DAA520; /* Goldenrod for the Try Again button */
+  border: 1px solid #7b7b7b;
+  color: #000;
+  cursor: pointer;
+  border-radius: 2px;
+  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #7b7b7b; /* 3D effect */
+  transition: background-color 0.2s;
+}
+
+.game-status button:hover {
+  background-color: #b8860b; /* Slightly darker goldenrod on hover */
 }
